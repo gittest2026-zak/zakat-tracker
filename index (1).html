@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Zakat">
+<meta name="theme-color" content="#0a0f1e">
+<link rel="manifest" href="manifest.json">
+<title>Zakat Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --bg2: #111827;
+    --bg3: #1a2235;
+    --card: #161d2e;
+    --card2: #1e2740;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --gold: #d4af37;
+    --gold2: #f0cc5a;
+    --gold-dim: rgba(212,175,55,0.15);
+    --gold-glow: rgba(212,175,55,0.25);
+    --teal: #2dd4bf;
+    --teal-dim: rgba(45,212,191,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+
+  /* ── INTEREST COLORS ── */
+  --orange: #fb923c;
+  --orange-dim: rgba(251,146,60,0.13);
+  --orange-glow: rgba(251,146,60,0.22);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.13);
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #475569;
+    --font: 'Sora', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --safe-top: env(safe-area-inset-top, 44px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
+    --tab-h: 64px;
+    --tab-font: 9px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    overscroll-behavior: none;
+    overflow: hidden;
+  }
+
+  #app {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transform: translateX(30px);
+    transition: opacity 0.28s ease, transform 0.28s ease;
+  }
+  .screen.active {
+    opacity: 1; pointer-events: all; transform: translateX(0);
+  }
+
+  .screen-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: calc(var(--safe-top) + 12px) 16px calc(var(--tab-h) + var(--safe-bottom) + 20px);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── TAB BAR ── */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: calc(var(--tab-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    background: rgba(14, 20, 35, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: flex-start;
+    z-index: 100;
+  }
+  .tab {
+    flex: 1; height: var(--tab-h);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .tab-icon { font-size: 22px; line-height: 1; }
+  .tab-label { font-size: var(--tab-font, 10px); font-weight: 500; color: var(--text3); transition: color 0.2s; }
+  .tab.active .tab-label { color: var(--gold); }
+  .tab-icon svg { transition: transform 0.2s; }
+  .tab.active .tab-icon svg { transform: scale(1.15); }
+
+  /* ── SECTION HEADER ── */
+  .section-title {
+    font-size: 26px; font-weight: 700; letter-spacing: -0.5px;
+    color: var(--text); margin-bottom: 20px; padding-top: 4px;
+  }
+  .section-title span { color: var(--gold); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+  .card-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-row:last-child { border-bottom: none; }
+  .card-row label { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .card-row value { font-size: 14px; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .stat-card .stat-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .stat-card .stat-val { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--text); line-height: 1.2; }
+  .stat-card .stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .stat-card.gold { border-color: var(--gold-glow); background: linear-gradient(135deg, #1a1a0a 0%, var(--card) 60%); }
+  .stat-card.gold .stat-val { color: var(--gold2); }
+  .stat-card.teal { border-color: rgba(45,212,191,0.2); }
+  .stat-card.teal .stat-val { color: var(--teal); }
+  .stat-card.green { border-color: rgba(74,222,128,0.2); }
+  .stat-card.green .stat-val { color: var(--green); }
+  .stat-card.red { border-color: rgba(248,113,113,0.2); }
+  .stat-card.red .stat-val { color: var(--red); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { margin-bottom: 12px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .progress-track { height: 6px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold), var(--gold2)); transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .progress-fill.teal { background: linear-gradient(90deg, var(--teal), #5eead4); }
+  .progress-fill.green { background: linear-gradient(90deg, #22c55e, var(--green)); }
+
+  /* ── HERO CARD ── */
+  .hero-card {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0f1520 100%);
+    border: 1px solid var(--gold-glow);
+    border-radius: 20px;
+    padding: 24px 20px 20px;
+    margin-bottom: 12px;
+    position: relative; overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute; top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label { font-size: 11px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .hero-amount { font-size: 38px; font-weight: 700; font-family: var(--mono); color: var(--text); letter-spacing: -1px; line-height: 1; }
+  .hero-sub { font-size: 13px; color: var(--text2); margin-top: 8px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 600; margin-top: 12px;
+  }
+  .hero-badge.met { background: var(--green-dim); color: var(--green); }
+  .hero-badge.not-met { background: var(--red-dim); color: var(--red); }
+  .hero-badge.pending { background: var(--gold-dim); color: var(--gold2); }
+
+  /* ── FORMS ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 7px; display: block; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 13px 14px;
+    font-family: var(--font); font-size: 15px; color: var(--text);
+    outline: none; appearance: none; -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--gold);
+  }
+  .form-textarea { min-height: 80px; resize: none; }
+  .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-hint { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 14px 20px; border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 15px; font-weight: 600;
+    cursor: pointer; border: none; outline: none;
+    transition: transform 0.12s, opacity 0.15s;
+    width: 100%;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.85; }
+  .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: #0a0f1e; }
+  .btn-outline { background: transparent; border: 1px solid var(--border2); color: var(--text); }
+  .btn-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+  .btn-sm { padding: 9px 14px; font-size: 13px; width: auto; border-radius: 8px; }
+
+  /* ── LIST ITEMS ── */
+  .list-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .list-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .list-icon.gold { background: var(--gold-dim); }
+  .list-icon.teal { background: var(--teal-dim); }
+  .list-icon.green { background: var(--green-dim); }
+  .list-icon.blue { background: var(--blue-dim); }
+  .list-info { flex: 1; min-width: 0; }
+  .list-title { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .list-amount { font-family: var(--mono); font-size: 14px; font-weight: 600; text-align: right; flex-shrink: 0; }
+
+  /* ── CHIPS ── */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+  .chip {
+    padding: 6px 13px; border-radius: 99px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border2); color: var(--text2);
+    background: var(--bg3);
+    transition: all 0.15s;
+  }
+  .chip.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold2); }
+
+  /* ── MODAL SHEET ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    width: 100%;
+    background: var(--bg2); border-radius: 22px 22px 0 0;
+    border-top: 1px solid var(--border2);
+    padding: 0 16px calc(var(--safe-bottom) + 16px);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    max-height: 92vh; overflow-y: auto;
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 99px; margin: 14px auto 18px; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+
+  /* ── NISAB STATUS BAR ── */
+  .nisab-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .nisab-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .nisab-dot.met { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .nisab-dot.not-met { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .nisab-text { flex: 1; font-size: 13px; }
+  .nisab-text strong { color: var(--text); }
+  .nisab-text span { color: var(--text2); }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .divider-label { text-align: center; font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 16px 0 12px; position: relative; }
+  .divider-label::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--border); z-index: 0; }
+  .divider-label span { position: relative; z-index: 1; background: var(--bg); padding: 0 10px; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 40px 20px; }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text2); }
+  .empty-sub { font-size: 13px; color: var(--text3); margin-top: 6px; }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed; right: 16px;
+    bottom: calc(var(--tab-h) + var(--safe-bottom) + 16px);
+    width: 52px; height: 52px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; cursor: pointer; z-index: 50;
+    box-shadow: 0 4px 20px var(--gold-glow);
+    border: none; transition: transform 0.12s;
+  }
+  .fab:active { transform: scale(0.92); }
+
+  /* ── HAWL TIMELINE ── */
+  .hawl-track { position: relative; margin: 16px 0; }
+  .hawl-bar { height: 8px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+  .hawl-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--gold)); }
+  .hawl-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text3); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { display: none; }
+
+  /* ── TOP STATUS AREA ── */
+  .status-area {
+    padding-top: var(--safe-top);
+    padding-left: 16px; padding-right: 16px;
+    padding-bottom: 10px;
+    background: rgba(10,15,30,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; z-index: 10;
+  }
+  .status-area h1 { font-size: 17px; font-weight: 600; }
+  .status-area .header-action { font-size: 13px; font-weight: 600; color: var(--gold); cursor: pointer; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeUp 0.35s ease both; }
+  .delay-1 { animation-delay: 0.05s; }
+  .delay-2 { animation-delay: 0.1s; }
+  .delay-3 { animation-delay: 0.15s; }
+  .delay-4 { animation-delay: 0.2s; }
+
+  /* ── TOGGLE ── */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+  .toggle-info .toggle-title { font-size: 14px; font-weight: 600; }
+  .toggle-info .toggle-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .toggle { width: 46px; height: 26px; border-radius: 99px; background: var(--bg3); border: 1px solid var(--border2); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: var(--gold); border-color: var(--gold); }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--text2); transition: transform 0.2s, background 0.2s; }
+  .toggle.on::after { transform: translateX(20px); background: #0a0f1e; }
+
+  /* Currency tag */
+  .curr-tag {
+    display: inline-block; padding: 2px 7px; border-radius: 5px;
+    font-size: 10px; font-weight: 700; font-family: var(--mono);
+    background: var(--bg3); color: var(--text3); margin-left: 4px;
+  }
+
+  /* ── ASSET TYPE BADGE ── */
+  .asset-type-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 6px;
+    font-size: 10px; font-weight: 700; font-family: var(--mono);
+    flex-shrink: 0;
+  }
+  .asset-type-badge.savings  { background: rgba(212,175,55,0.15); color: #f0cc5a; }
+  .asset-type-badge.current  { background: rgba(45,212,191,0.12); color: #2dd4bf; }
+  .asset-type-badge.invest   { background: rgba(96,165,250,0.12); color: #60a5fa; }
+  .asset-type-badge.crypto   { background: rgba(167,139,250,0.12); color: #a78bfa; }
+  .asset-type-badge.cash     { background: rgba(74,222,128,0.12); color: #4ade80; }
+  .asset-type-badge.gold2    { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .asset-type-badge.other    { background: rgba(148,163,184,0.1); color: #94a3b8; }
+
+  /* ── ACCOUNT TOTAL STRIP ── */
+  .total-strip {
+    background: linear-gradient(135deg, #1a1f2e, #0f1520);
+    border: 1px solid var(--gold-glow);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .total-strip .ts-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; }
+  .total-strip .ts-val   { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--gold2); }
+  .total-strip .ts-sub   { font-size: 12px; color: var(--text3); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ════════════════════════════════
+       SCREEN 1: DASHBOARD
+  ════════════════════════════════ -->
+  <div class="screen active" id="screen-dashboard">
+    <div class="status-area">
+      <h1>Zakat Tracker</h1>
+      <span class="header-action" onclick="openSettings()">⚙ Settings</span>
+    </div>
+    <div class="screen-body" id="dashboard-body">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SCREEN 2: BALANCE LOG
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-balance">
+    <div class="status-area">
+      <h1>Balance Log</h1>
+      <span class="header-action" id="balance-add-btn" onclick="openAddBalance()">+ Add</span>
+    </div>
+    <div class="screen-body" id="balance-body">
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SCREEN 3: CALCULATOR
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-calc">
+    <div class="status-area">
+      <h1>Zakat Calculator</h1>
+    </div>
+    <div class="screen-body" id="calc-body">
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SCREEN 4: PAYMENTS
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-payments">
+    <div class="status-area">
+      <h1>Payments</h1>
+      <span class="header-action" onclick="openAddPayment()">+ Add</span>
+    </div>
+    <div class="screen-body" id="payments-body">
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════
+       SCREEN 5: ASSETS
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-assets">
+    <div class="status-area">
+      <h1>My Assets</h1>
+      <span class="header-action" onclick="openAddAsset()">+ Add</span>
+    </div>
+    <div class="screen-body" id="assets-body">
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SCREEN 6: INTEREST
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-interest">
+    <div class="status-area">
+      <h1>Interest Tracker</h1>
+      <span class="header-action" onclick="openAddInterest()">+ Received</span>
+    </div>
+    <div class="screen-body" id="interest-body"></div>
+  </div>
+
+  <!-- ════════════════════════════════
+       TAB BAR
+  ════════════════════════════════ -->
+  <nav class="tabbar">
+    <div class="tab active" id="tab-dashboard" onclick="switchTab('dashboard')">
+      <div class="tab-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <div class="tab-label">Dashboard</div>
+    </div>
+    <div class="tab" id="tab-assets" onclick="switchTab('assets')">
+      <div class="tab-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/><path d="M8.5 15.5a5 5 0 0 0 7 0"/></svg></div>
+      <div class="tab-label">Assets</div>
+    </div>
+    <div class="tab" id="tab-balance" onclick="switchTab('balance')">
+      <div class="tab-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="tab-label">Hawl Log</div>
+    </div>
+    <div class="tab" id="tab-calc" onclick="switchTab('calc')">
+      <div class="tab-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg></div>
+      <div class="tab-label">Calculate</div>
+    </div>
+    <div class="tab" id="tab-payments" onclick="switchTab('payments')">
+      <div class="tab-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="tab-label">Payments</div>
+    </div>
+    <div class="tab" id="tab-interest" onclick="switchTab('interest')">
+      <div class="tab-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="tab-label">Interest</div>
+    </div>
+  </nav>
+
+
+  <!-- ════════════════════════════════
+       MODAL: LOG INTEREST RECEIVED
+  ════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-interest-recv">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Log Interest Received</div>
+      <div class="form-hint" style="margin-bottom:16px;padding:10px 12px;background:var(--orange-dim);border-radius:var(--radius-sm);border-left:3px solid var(--orange);color:var(--text2);">
+        Record interest credited to any account. This must be given away and cannot be kept or used.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account / Source</label>
+        <input type="text" class="form-input" id="int-account" placeholder="e.g. Chase Savings, HDFC FD...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount</label>
+          <input type="number" class="form-input" id="int-amount" placeholder="0.00" inputmode="decimal" oninput="autoConvertInterest()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Currency</label>
+          <select class="form-select" id="int-currency" onchange="autoConvertInterest()">
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="AED">AED</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="SAR">SAR</option>
+          </select>
+        </div>
+      </div>
+      <div id="int-equiv-row" style="display:none;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2);">
+        <span id="int-equiv-text"></span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date Received</label>
+          <input type="date" class="form-input" id="int-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Period</label>
+          <input type="text" class="form-input" id="int-period" placeholder="e.g. Jan 2025">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input type="text" class="form-input" id="int-notes" placeholder="Optional details...">
+      </div>
+      <input type="hidden" id="int-edit-id">
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-interest-recv')" style="flex:1">Cancel</button>
+        <button class="btn" style="flex:2;background:linear-gradient(135deg,var(--orange),#fbbf24);color:#0a0f1e;font-weight:600;" onclick="saveInterest()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       MODAL: DISTRIBUTE INTEREST
+  ════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-interest-dist">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Record Distribution</div>
+      <div class="form-group">
+        <label class="form-label">Given To / Cause</label>
+        <input type="text" class="form-input" id="dist-recipient" placeholder="e.g. Family, Local charity, Mosque...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount</label>
+          <input type="number" class="form-input" id="dist-amount" placeholder="0.00" inputmode="decimal" oninput="autoConvertDist()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Currency</label>
+          <select class="form-select" id="dist-currency" onchange="autoConvertDist()">
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="AED">AED</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="SAR">SAR</option>
+          </select>
+        </div>
+      </div>
+      <div id="dist-equiv-row" style="display:none;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2);">
+        <span id="dist-equiv-text"></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mode of Payment</label>
+        <div class="chip-row" id="dist-mode-chips">
+          <div class="chip active" data-val="Bank Transfer" onclick="selectChip(this,'dist-mode-chips')">Bank Transfer</div>
+          <div class="chip" data-val="Cash" onclick="selectChip(this,'dist-mode-chips')">Cash</div>
+          <div class="chip" data-val="Online / UPI" onclick="selectChip(this,'dist-mode-chips')">Online / UPI</div>
+          <div class="chip" data-val="Cheque" onclick="selectChip(this,'dist-mode-chips')">Cheque</div>
+          <div class="chip" data-val="Other" onclick="selectChip(this,'dist-mode-chips')">Other</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="dist-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input type="text" class="form-input" id="dist-notes" placeholder="Optional details...">
+      </div>
+      <input type="hidden" id="dist-edit-id">
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-interest-dist')" style="flex:1">Cancel</button>
+        <button class="btn" style="flex:2;background:linear-gradient(135deg,#8b5cf6,var(--purple));color:#fff;font-weight:600;" onclick="saveDist()">Save Distribution</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       MODAL: ADD ASSET
+  ════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-asset">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="asset-modal-title">Add Asset / Account</div>
+
+      <div class="form-group">
+        <label class="form-label">Account / Asset Name</label>
+        <input type="text" class="form-input" id="ast-name" placeholder="e.g. Chase Savings, HDFC Account...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Asset Type</label>
+        <div class="chip-row" id="ast-type-chips">
+          <div class="chip active" data-val="savings" onclick="selectChip(this,'ast-type-chips')">💰 Savings</div>
+          <div class="chip" data-val="current" onclick="selectChip(this,'ast-type-chips')">🏦 Current</div>
+          <div class="chip" data-val="invest" onclick="selectChip(this,'ast-type-chips')">📈 Investment</div>
+          <div class="chip" data-val="crypto" onclick="selectChip(this,'ast-type-chips')">🔗 Crypto</div>
+          <div class="chip" data-val="cash" onclick="selectChip(this,'ast-type-chips')">💵 Cash</div>
+          <div class="chip" data-val="gold2" onclick="selectChip(this,'ast-type-chips')">🥇 Gold/Silver</div>
+          <div class="chip" data-val="other" onclick="selectChip(this,'ast-type-chips')">📦 Other</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Balance Amount</label>
+          <input type="number" class="form-input" id="ast-amount" placeholder="0.00" inputmode="decimal" oninput="autoConvertAsset()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Currency</label>
+          <select class="form-select" id="ast-currency" onchange="autoConvertAsset()">
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="AED">AED (د.إ)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="SAR">SAR (﷼)</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="ast-equiv-row" style="display:none; background:var(--bg3); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:12px; color:var(--text2);">
+        <span id="ast-equiv-text"></span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Institution / Bank</label>
+          <input type="text" class="form-input" id="ast-bank" placeholder="e.g. Chase, HDFC...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">As of Date</label>
+          <input type="date" class="form-input" id="ast-date">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Is this asset zakatable?</label>
+        <div class="chip-row" id="ast-zakat-chips">
+          <div class="chip active" data-val="yes" onclick="selectChip(this,'ast-zakat-chips')">✓ Yes — include in calc</div>
+          <div class="chip" data-val="no" onclick="selectChip(this,'ast-zakat-chips')">✗ No — exclude</div>
+        </div>
+        <div class="form-hint">Exclude liabilities, business assets not for trade, or personal-use items.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <input type="text" class="form-input" id="ast-notes" placeholder="Account number, description...">
+      </div>
+
+      <input type="hidden" id="ast-edit-id">
+
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-asset')" style="flex:1">Cancel</button>
+        <button class="btn btn-gold" onclick="saveAsset()" style="flex:2" id="ast-save-btn">Add Asset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       MODAL: ADD BALANCE
+  ════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-balance">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="balance-modal-title">Log Balance Snapshot</div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="bal-date">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount (USD)</label>
+          <input type="number" class="form-input" id="bal-usd" placeholder="0.00" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amount (INR)</label>
+          <input type="number" class="form-input" id="bal-inr" placeholder="0.00" inputmode="decimal">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <input type="text" class="form-input" id="bal-note" placeholder="e.g. Savings, Investment...">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-balance')" style="flex:1">Cancel</button>
+        <button class="btn btn-gold" onclick="saveBalance()" style="flex:2">Save Snapshot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       MODAL: ADD PAYMENT
+  ════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-payment">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Record Zakat Payment</div>
+
+      <div class="form-group">
+        <label class="form-label">Recipient / Cause</label>
+        <input type="text" class="form-input" id="pay-recipient" placeholder="e.g. Family in India, Local charity...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount</label>
+          <input type="number" class="form-input" id="pay-amount" placeholder="0.00" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Currency</label>
+          <select class="form-select" id="pay-currency">
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mode of Payment</label>
+        <div class="chip-row" id="pay-mode-chips">
+          <div class="chip active" data-val="Bank Transfer" onclick="selectChip(this,'pay-mode-chips')">Bank Transfer</div>
+          <div class="chip" data-val="Cash" onclick="selectChip(this,'pay-mode-chips')">Cash</div>
+          <div class="chip" data-val="Online / UPI" onclick="selectChip(this,'pay-mode-chips')">Online / UPI</div>
+          <div class="chip" data-val="Cheque" onclick="selectChip(this,'pay-mode-chips')">Cheque</div>
+          <div class="chip" data-val="Crypto" onclick="selectChip(this,'pay-mode-chips')">Crypto</div>
+          <div class="chip" data-val="Other" onclick="selectChip(this,'pay-mode-chips')">Other</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date Paid</label>
+          <input type="date" class="form-input" id="pay-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Zakat Year</label>
+          <select class="form-select" id="pay-year">
+            <option>2024–25</option>
+            <option>2023–24</option>
+            <option>2022–23</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input type="text" class="form-input" id="pay-notes" placeholder="Optional details...">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-payment')" style="flex:1">Cancel</button>
+        <button class="btn btn-gold" onclick="savePayment()" style="flex:2">Save Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       MODAL: SETTINGS
+  ════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Settings</div>
+
+      <div class="form-group">
+        <label class="form-label">Hawl Start Date (Lunar Year Start)</label>
+        <input type="date" class="form-input" id="set-hawl-start">
+        <div class="form-hint">Zakat is due after one full lunar year (354 days) above nisab.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nisab in USD</label>
+          <input type="number" class="form-input" id="set-nisab-usd" placeholder="e.g. 5400" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nisab in INR</label>
+          <input type="number" class="form-input" id="set-nisab-inr" placeholder="e.g. 450000" inputmode="decimal">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">USD → INR Exchange Rate</label>
+        <input type="number" class="form-input" id="set-fx" placeholder="e.g. 88" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zakat Rate (%)</label>
+        <input type="number" class="form-input" id="set-rate" placeholder="2.5" inputmode="decimal" value="2.5">
+        <div class="form-hint">Standard Islamic rate is 2.5% of zakatable assets.</div>
+      </div>
+
+      <div class="toggle-row" style="padding:12px 0 4px;">
+        <div class="toggle-info">
+          <div class="toggle-title">Compact Amount Display</div>
+          <div class="toggle-sub">Show $2.4k instead of $2,400.00 in summary cards</div>
+        </div>
+        <div class="toggle" id="tog-compact" onclick="this.classList.toggle('on')"></div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-settings')" style="flex:1">Cancel</button>
+        <button class="btn btn-gold" onclick="saveSettings()" style="flex:2">Save Settings</button>
+      </div>
+
+      <div class="divider" style="margin:20px 0 12px;"></div>
+      <button class="btn" style="background:var(--green-dim);color:var(--green);border:1px solid rgba(74,222,128,0.2);margin-bottom:10px;" onclick="exportToExcel()">⬇ Download Data as Excel</button>
+      <button class="btn btn-red" onclick="confirmClearData()">Clear All Data</button>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// STATE & STORAGE
+// ═══════════════════════════════════════════════════
+const KEY = 'zakat_data_v2';
+
+function defaultState() {
+  const today = new Date().toISOString().split('T')[0];
+  return {
+    settings: {
+      hawlStart: today,
+      nisabUSD: 5400,
+      nisabINR: 450000,
+      fx: 88,
+      zakatRate: 2.5,
+      displayCompact: false,   // false = always show full 2dp amount
+    },
+    assets: [],     // { id, name, type, amount, currency, bank, date, zakatable, notes }
+    balances: [],   // { id, date, usd, inr, note }
+    payments: [],   // { id, recipient, amount, currency, mode, date, year, notes }
+    interest: [],   // { id, accountName, amount, currency, date, notes }  — received interest
+    intDist: []     // { id, recipient, amount, currency, mode, date, notes } — distributed interest
+  };
+}
+
+let state = defaultState();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) state = { ...defaultState(), ...JSON.parse(raw) };
+  } catch(e) {}
+}
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function ceilTo2(n) {
+  // Round up to 2 decimal places (ceiling)
+  return Math.ceil(n * 100) / 100;
+}
+
+// compact param: true = allow abbreviation (k/L), false = always full
+// Respects state.settings.displayCompact — if false, never abbreviate regardless
+function fmt(n, currency='USD', compact=false) {
+  if (n == null || isNaN(n)) return '—';
+  const v = ceilTo2(n);
+  const useCompact = compact && state.settings.displayCompact;
+  if (currency === 'USD') {
+    if (useCompact && v >= 1000) return '$' + ceilTo2(v/1000).toFixed(1) + 'k';
+    return '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  if (currency === 'INR') {
+    if (useCompact && v >= 100000) return '₹' + ceilTo2(v/100000).toFixed(1) + 'L';
+    if (useCompact && v >= 1000) return '₹' + ceilTo2(v/1000).toFixed(1) + 'k';
+    return '₹' + v.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  return v.toFixed(2);
+}
+
+function toUSD(amount, currency) {
+  if (currency === 'USD') return amount;
+  return amount / state.settings.fx;
+}
+
+function toINR(amount, currency) {
+  if (currency === 'INR') return amount;
+  return amount * state.settings.fx;
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function hawlDays() {
+  const start = new Date(state.settings.hawlStart);
+  const now = new Date();
+  return Math.floor((now - start) / 86400000);
+}
+
+function hawlProgress() {
+  const lunar = 354;
+  return Math.min(hawlDays() / lunar, 1);
+}
+
+function hawlDaysLeft() {
+  return Math.max(354 - hawlDays(), 0);
+}
+
+function latestBalance() {
+  if (!state.balances.length) return { usd: 0, inr: 0 };
+  const sorted = [...state.balances].sort((a,b) => b.date.localeCompare(a.date));
+  return sorted[0];
+}
+
+function averageBalance() {
+  if (!state.balances.length) return { usd: 0, inr: 0 };
+  const usd = state.balances.reduce((s,b) => s + (parseFloat(b.usd)||0), 0) / state.balances.length;
+  const inr = state.balances.reduce((s,b) => s + (parseFloat(b.inr)||0), 0) / state.balances.length;
+  return { usd, inr };
+}
+
+
+// ═══════════════════════════════════════════════════
+// ASSET HELPERS
+// ═══════════════════════════════════════════════════
+
+// Multi-currency FX rates to USD (approximate; user can override via settings)
+const FX_TO_USD = {
+  USD: 1, INR: null, // INR uses state.settings.fx
+  AED: 0.272, GBP: 1.27, EUR: 1.09, SAR: 0.267, OTHER: 1
+};
+
+function assetToUSD(amount, currency) {
+  if (currency === 'USD') return amount;
+  if (currency === 'INR') return amount / state.settings.fx;
+  const rate = FX_TO_USD[currency] || 1;
+  return amount * rate;
+}
+
+function assetToINR(amount, currency) {
+  return assetToUSD(amount, currency) * state.settings.fx;
+}
+
+function totalAssetsUSD() {
+  return state.assets
+    .filter(a => a.zakatable !== 'no')
+    .reduce((s, a) => s + assetToUSD(parseFloat(a.amount)||0, a.currency), 0);
+}
+
+function totalAssetsINR() {
+  return totalAssetsUSD() * state.settings.fx;
+}
+
+function totalAllAssetsUSD() {
+  return state.assets.reduce((s, a) => s + assetToUSD(parseFloat(a.amount)||0, a.currency), 0);
+}
+
+function currencySymbol(c) {
+  return { USD:'$', INR:'₹', AED:'د.إ', GBP:'£', EUR:'€', SAR:'﷼', OTHER:'' }[c] || '';
+}
+
+function fmtAssetAmount(amount, currency) {
+  const sym = currencySymbol(currency);
+  const n = ceilTo2(parseFloat(amount) || 0);
+  if (currency === 'INR') return sym + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return sym + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+const TYPE_LABELS = {
+  savings: 'Savings', current: 'Current', invest: 'Investment',
+  crypto: 'Crypto', cash: 'Cash', gold2: 'Gold/Silver', other: 'Other'
+};
+const TYPE_ICONS = {
+  savings: '💰', current: '🏦', invest: '📈', crypto: '🔗',
+  cash: '💵', gold2: '🥇', other: '📦'
+};
+
+function nisabMet() {
+  const totalUSD = totalAssetsUSD();
+  const totalINR = totalAssetsINR();
+  // Fall back to balance snapshots if no assets entered
+  if (state.assets.length > 0) {
+    return totalUSD >= state.settings.nisabUSD || totalINR >= state.settings.nisabINR;
+  }
+  const b = latestBalance();
+  return (parseFloat(b.usd)||0) >= state.settings.nisabUSD ||
+         (parseFloat(b.inr)||0) >= state.settings.nisabINR;
+}
+
+function zakatOwedUSD() {
+  if (!nisabMet()) return 0;
+  if (state.assets.length > 0) return (totalAssetsUSD() * state.settings.zakatRate) / 100;
+  const avg = averageBalance();
+  return (avg.usd * state.settings.zakatRate) / 100;
+}
+
+function zakatOwedINR() {
+  if (!nisabMet()) return 0;
+  if (state.assets.length > 0) return (totalAssetsINR() * state.settings.zakatRate) / 100;
+  const avg = averageBalance();
+  return (avg.inr * state.settings.zakatRate) / 100;
+}
+
+function totalPaidUSD() {
+  return state.payments.reduce((s,p) => s + toUSD(parseFloat(p.amount)||0, p.currency), 0);
+}
+
+function totalPaidINR() {
+  return state.payments.reduce((s,p) => s + toINR(parseFloat(p.amount)||0, p.currency), 0);
+}
+
+function remainingUSD() {
+  return Math.max(zakatOwedUSD() - totalPaidUSD(), 0);
+}
+
+function remainingINR() {
+  return Math.max(zakatOwedINR() - totalPaidINR(), 0);
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ═══════════════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  renderTab(tab);
+}
+
+function renderTab(tab) {
+  if (tab === 'dashboard') renderDashboard();
+  else if (tab === 'assets') renderAssets();
+  else if (tab === 'balance') renderBalance();
+  else if (tab === 'calc') renderCalc();
+  else if (tab === 'payments') renderPayments();
+  else if (tab === 'interest') renderInterest();
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER: DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDashboard() {
+  const b = latestBalance();
+  const hasAssets = state.assets.length > 0;
+  const usd = hasAssets ? totalAllAssetsUSD() : (parseFloat(b.usd) || 0);
+  const inr = hasAssets ? (usd * state.settings.fx) : (parseFloat(b.inr) || 0);
+  const assetCount = state.assets.length;
+  const met = nisabMet();
+  const prog = hawlProgress();
+  const daysLeft = hawlDaysLeft();
+  const owed = zakatOwedUSD();
+  const owedINR = zakatOwedINR();
+  const paid = totalPaidUSD();
+  const paidINR = totalPaidINR();
+  const rem = remainingUSD();
+  const remINR = remainingINR();
+  const paidPct = owed > 0 ? Math.min(paid / owed, 1) : 0;
+
+  const html = `
+    <div class="animate-in">
+      <div class="hero-card">
+        <div class="hero-label">Current Balance</div>
+        <div class="hero-amount">${fmt(usd,'USD')}</div>
+        <div class="hero-sub">${fmt(inr,'INR')} &nbsp;·&nbsp; ${hasAssets ? assetCount + ' accounts' : ('as of ' + (fmtDate(b.date) || 'No data yet'))}</div>
+        <div class="hero-badge ${met ? 'met' : 'not-met'}">
+          ${met ? '● Nisab met' : '● Below nisab'}
+        </div>
+      </div>
+    </div>
+
+    <div class="nisab-bar animate-in delay-1">
+      <div class="nisab-dot ${met ? 'met' : 'not-met'}"></div>
+      <div class="nisab-text">
+        <strong>Nisab: ${fmt(state.settings.nisabUSD,'USD')} / ${fmt(state.settings.nisabINR,'INR')}</strong><br>
+        <span>${met ? 'Your balance exceeds the nisab threshold.' : `Need ${fmt(Math.max(state.settings.nisabUSD - usd,0),'USD')} more to reach nisab.`}</span>
+      </div>
+    </div>
+
+    <div class="stat-grid animate-in delay-2">
+      <div class="stat-card gold">
+        <div class="stat-label">Zakat Owed</div>
+        <div class="stat-val">${fmt(owed,'USD',true)}</div>
+        <div class="stat-sub">${fmt(owedINR,'INR',true)}</div>
+      </div>
+      <div class="stat-card ${paid >= owed && owed > 0 ? 'green' : 'teal'}">
+        <div class="stat-label">Total Paid</div>
+        <div class="stat-val">${fmt(paid,'USD',true)}</div>
+        <div class="stat-sub">${fmt(paidINR,'INR',true)}</div>
+      </div>
+      <div class="stat-card ${rem > 0 ? 'red' : 'green'}">
+        <div class="stat-label">Remaining</div>
+        <div class="stat-val">${rem > 0 ? fmt(rem,'USD',true) : 'Paid ✓'}</div>
+        <div class="stat-sub">${rem > 0 ? fmt(remINR,'INR',true) : 'Zakat fulfilled'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Payments Made</div>
+        <div class="stat-val">${state.payments.length}</div>
+        <div class="stat-sub">transactions</div>
+      </div>
+    </div>
+
+    <div class="card animate-in delay-3">
+      <div style="font-size:13px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.7px; margin-bottom:12px;">Hawl Progress</div>
+      <div class="hawl-track">
+        <div class="hawl-bar"><div class="hawl-fill" style="width:${(prog*100).toFixed(1)}%"></div></div>
+        <div class="hawl-labels"><span>${fmtDate(state.settings.hawlStart)}</span><span>${daysLeft === 0 ? '✓ Complete' : daysLeft + ' days left'}</span></div>
+      </div>
+      <div class="progress-label" style="margin-top:8px;">
+        <span>${Math.round(prog*100)}% of lunar year complete</span>
+        <span>${hawlDays()} / 354 days</span>
+      </div>
+    </div>
+
+    ${owed > 0 ? `
+    <div class="card animate-in delay-4">
+      <div style="font-size:13px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.7px; margin-bottom:12px;">Payment Progress</div>
+      <div class="progress-wrap" style="margin-bottom:0">
+        <div class="progress-label">
+          <span style="color:var(--green)">${fmt(paid,'USD')} paid</span>
+          <span>${(paidPct*100).toFixed(0)}%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill green" style="width:${(paidPct*100).toFixed(1)}%"></div></div>
+        <div style="margin-top:6px; font-size:12px; color:var(--text3)">of ${fmt(owed,'USD')} total obligation</div>
+      </div>
+    </div>` : ''}
+
+    ${state.payments.length > 0 ? `
+    <div class="divider-label"><span>Recent Zakat Payments</span></div>
+    ${[...state.payments].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3).map(p => `
+      <div class="list-item animate-in">
+        <div class="list-icon ${p.currency==='USD'?'gold':'teal'}">${p.currency==='USD'?'💵':'💸'}</div>
+        <div class="list-info">
+          <div class="list-title">${p.recipient || 'Unnamed'}</div>
+          <div class="list-sub">${p.mode} · ${fmtDate(p.date)}</div>
+        </div>
+        <div class="list-amount" style="color:var(--green)">+${fmt(parseFloat(p.amount),p.currency,true)}</div>
+      </div>
+    `).join('')}` : ''}
+
+    ${state.interest.length > 0 ? `
+    <div class="divider-label animate-in"><span>Interest Summary</span></div>
+    <div class="card animate-in" style="border-color:var(--orange-glow);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:13px;font-weight:600;color:var(--orange);">Interest Received</span>
+        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--orange);">${fmt(totalInterestReceivedUSD(),'USD')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:13px;font-weight:600;color:var(--purple);">Distributed</span>
+        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--purple);">${fmt(totalInterestDistributedUSD(),'USD')}</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${Math.min(totalInterestDistributedUSD()/Math.max(totalInterestReceivedUSD(),0.01),1)*100}%;background:linear-gradient(90deg,#8b5cf6,var(--purple));"></div></div>
+      <div style="margin-top:8px;font-size:12px;color:${interestRemainingUSD()>0?'var(--red)':'var(--green)'};">
+        ${interestRemainingUSD()>0 ? fmt(interestRemainingUSD(),'USD') + ' still to distribute' : '✓ All interest distributed'}
+      </div>
+    </div>` : ''}
+  `;
+  document.getElementById('dashboard-body').innerHTML = html;
+}
+
+
+// ═══════════════════════════════════════════════════
+// RENDER: ASSETS
+// ═══════════════════════════════════════════════════
+function renderAssets() {
+  const assets = state.assets;
+  const zakatableAssets = assets.filter(a => a.zakatable !== 'no');
+  const excludedAssets  = assets.filter(a => a.zakatable === 'no');
+
+  // Group by type
+  const byType = {};
+  zakatableAssets.forEach(a => {
+    if (!byType[a.type]) byType[a.type] = [];
+    byType[a.type].push(a);
+  });
+
+  if (assets.length === 0) {
+    document.getElementById('assets-body').innerHTML = `
+      <div class="empty" style="padding-top:60px;">
+        <div class="empty-icon">🏦</div>
+        <div class="empty-title">No assets added yet</div>
+        <div class="empty-sub">Tap + Add to log your savings, investments, cash, and other zakatable assets</div>
+      </div>
+    `;
+    return;
+  }
+
+  const totalUSD = totalAssetsUSD();
+  const totalINR = totalAssetsINR();
+  const allUSD   = totalAllAssetsUSD();
+
+  let html = `
+    <div class="total-strip animate-in">
+      <div>
+        <div class="ts-label">Total Zakatable Assets</div>
+        <div class="ts-val">${fmt(totalUSD,'USD')}</div>
+        <div class="ts-sub">${fmt(totalINR,'INR')} &nbsp;·&nbsp; ${zakatableAssets.length} of ${assets.length} accounts</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:4px;">Zakat Due</div>
+        <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green);">${fmt(totalUSD * state.settings.zakatRate / 100,'USD')}</div>
+        <div style="font-size:11px;color:var(--text3);">${state.settings.zakatRate}% rate</div>
+      </div>
+    </div>
+
+    <div class="stat-grid animate-in delay-1">
+      <div class="stat-card gold">
+        <div class="stat-label">Accounts</div>
+        <div class="stat-val">${assets.length}</div>
+        <div class="stat-sub">${zakatableAssets.length} zakatable</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-label">Currencies</div>
+        <div class="stat-val">${[...new Set(assets.map(a=>a.currency))].length}</div>
+        <div class="stat-sub">${[...new Set(assets.map(a=>a.currency))].join(', ')}</div>
+      </div>
+    </div>
+  `;
+
+  // Zakatable accounts grouped by type
+  if (Object.keys(byType).length > 0) {
+    html += `<div class="divider-label animate-in delay-2"><span>Zakatable Assets</span></div>`;
+
+    Object.entries(byType).forEach(([type, list]) => {
+      const typeTotal = list.reduce((s,a) => s + assetToUSD(parseFloat(a.amount)||0, a.currency), 0);
+      html += `
+        <div style="margin-bottom:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px 4px;">
+            <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;">${TYPE_ICONS[type]||'📦'} ${TYPE_LABELS[type]||type}</span>
+            <span style="font-size:12px;font-weight:600;font-family:var(--mono);color:var(--text2);">${fmt(typeTotal,'USD',true)}</span>
+          </div>
+          ${list.map(a => renderAssetItem(a)).join('')}
+        </div>
+      `;
+    });
+  }
+
+  // Excluded accounts
+  if (excludedAssets.length > 0) {
+    html += `<div class="divider-label"><span>Excluded from Zakat</span></div>`;
+    html += excludedAssets.map(a => renderAssetItem(a, true)).join('');
+  }
+
+  document.getElementById('assets-body').innerHTML = html;
+}
+
+function renderAssetItem(a, excluded=false) {
+  const usdVal = assetToUSD(parseFloat(a.amount)||0, a.currency);
+  const inrVal = usdVal * state.settings.fx;
+  const showEquiv = a.currency !== 'USD' && a.currency !== 'INR';
+  return `
+    <div class="list-item" style="${excluded?'opacity:0.55;':''}">
+      <div class="list-icon ${a.type}">
+        <span style="font-size:18px;">${TYPE_ICONS[a.type]||'📦'}</span>
+      </div>
+      <div class="list-info">
+        <div class="list-title">${a.name || 'Unnamed Account'}</div>
+        <div class="list-sub">
+          ${a.bank ? a.bank + ' · ' : ''}${fmtDate(a.date)}
+          ${a.notes ? ' · ' + a.notes : ''}
+        </div>
+        ${showEquiv ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono);">≈ ${fmt(usdVal,'USD',true)} / ${fmt(inrVal,'INR',true)}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
+        <div class="list-amount" style="color:${excluded?'var(--text3)':'var(--gold2)'};">${fmtAssetAmount(a.amount,a.currency)}</div>
+        <span class="asset-type-badge ${a.type}">${a.currency}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:6px;">
+        <button onclick="editAsset('${a.id}')" style="background:var(--blue-dim);border:none;color:var(--blue);padding:5px 8px;border-radius:7px;font-size:13px;cursor:pointer;">✎</button>
+        <button onclick="deleteAsset('${a.id}')" style="background:var(--red-dim);border:none;color:var(--red);padding:5px 8px;border-radius:7px;font-size:16px;cursor:pointer;">×</button>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER: BALANCE
+// ═══════════════════════════════════════════════════
+function renderBalance() {
+  const sorted = [...state.balances].sort((a,b) => b.date.localeCompare(a.date));
+  const html = sorted.length === 0 ? `
+    <div class="empty">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">No balance snapshots yet</div>
+      <div class="empty-sub">Tap + Add to log your current balance</div>
+    </div>
+  ` : `
+    <div class="card animate-in" style="margin-bottom:16px;">
+      <div class="card-row"><label>Latest Balance (USD)</label><value>${fmt(parseFloat(sorted[0].usd)||0,'USD')}</value></div>
+      <div class="card-row"><label>Latest Balance (INR)</label><value>${fmt(parseFloat(sorted[0].inr)||0,'INR')}</value></div>
+      <div class="card-row"><label>Avg Balance (USD)</label><value>${fmt(averageBalance().usd,'USD')}</value></div>
+      <div class="card-row"><label>Avg Balance (INR)</label><value>${fmt(averageBalance().inr,'INR')}</value></div>
+      <div class="card-row"><label>Snapshots logged</label><value>${state.balances.length}</value></div>
+    </div>
+    <div class="divider-label"><span>All Snapshots</span></div>
+    ${sorted.map(b => `
+      <div class="list-item animate-in">
+        <div class="list-icon gold">📅</div>
+        <div class="list-info">
+          <div class="list-title">${fmtDate(b.date)}</div>
+          <div class="list-sub">${b.note || 'Balance snapshot'}</div>
+        </div>
+        <div style="text-align:right; flex-shrink:0;">
+          <div class="list-amount" style="color:var(--gold2)">${fmt(parseFloat(b.usd)||0,'USD',true)}</div>
+          <div style="font-size:11px; color:var(--text3); font-family:var(--mono);">${fmt(parseFloat(b.inr)||0,'INR',true)}</div>
+        </div>
+        <button onclick="deleteBalance('${b.id}')" style="background:var(--red-dim);border:none;color:var(--red);padding:6px 9px;border-radius:8px;font-size:16px;cursor:pointer;flex-shrink:0;margin-left:4px;">×</button>
+      </div>
+    `).join('')}
+  `;
+  document.getElementById('balance-body').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER: CALCULATOR
+// ═══════════════════════════════════════════════════
+function renderCalc() {
+  const avg = averageBalance();
+  const owed = zakatOwedUSD();
+  const owedINR = zakatOwedINR();
+  const paid = totalPaidUSD();
+  const paidINR = totalPaidINR();
+  const rem = remainingUSD();
+  const remINR = remainingINR();
+  const met = nisabMet();
+
+  const html = `
+    <div class="animate-in">
+      <div class="hero-card" style="background:linear-gradient(135deg, #0f1a0a 0%, #0a0f1e 100%); border-color:rgba(74,222,128,0.2);">
+        <div class="hero-label" style="color:var(--green)">Zakat Due</div>
+        <div class="hero-amount">${met ? fmt(owed,'USD') : '—'}</div>
+        <div class="hero-sub">${met ? fmt(owedINR,'INR') + ' · at ' + state.settings.zakatRate + '% rate' : 'Nisab not yet reached'}</div>
+        <div class="hero-badge ${met ? 'met' : 'not-met'}">${met ? '● Zakat applicable' : '● Below nisab'}</div>
+      </div>
+    </div>
+
+    <div class="card animate-in delay-1">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:4px;">Calculation Breakdown</div>
+      <div class="card-row"><label>Nisab Threshold</label><value>${fmt(state.settings.nisabUSD,'USD')} / ${fmt(state.settings.nisabINR,'INR')}</value></div>
+      ${state.assets.length > 0 ? `
+      <div class="card-row"><label>Total Assets (USD)</label><value>${fmt(totalAssetsUSD(),'USD')}</value></div>
+      <div class="card-row"><label>Total Assets (INR)</label><value>${fmt(totalAssetsINR(),'INR')}</value></div>
+      ` : `
+      <div class="card-row"><label>Average Balance (USD)</label><value>${fmt(avg.usd,'USD')}</value></div>
+      <div class="card-row"><label>Average Balance (INR)</label><value>${fmt(avg.inr,'INR')}</value></div>
+      `}
+      <div class="card-row"><label>Zakat Rate</label><value>${state.settings.zakatRate}%</value></div>
+      <div class="card-row"><label>Zakat Owed (USD)</label><value style="color:var(--gold2)">${fmt(owed,'USD')}</value></div>
+      <div class="card-row"><label>Zakat Owed (INR)</label><value style="color:var(--gold2)">${fmt(owedINR,'INR')}</value></div>
+    </div>
+
+    <div class="stat-grid animate-in delay-2">
+      <div class="stat-card green">
+        <div class="stat-label">Total Paid</div>
+        <div class="stat-val">${fmt(paid,'USD',true)}</div>
+        <div class="stat-sub">${fmt(paidINR,'INR',true)}</div>
+      </div>
+      <div class="stat-card ${rem > 0 ? 'red' : 'green'}">
+        <div class="stat-label">Outstanding</div>
+        <div class="stat-val">${rem > 0 ? fmt(rem,'USD',true) : '✓ Paid'}</div>
+        <div class="stat-sub">${rem > 0 ? fmt(remINR,'INR',true) : 'Fulfilled'}</div>
+      </div>
+    </div>
+
+    <div class="card animate-in delay-3">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:12px;">USD ↔ INR Converter</div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">USD</label>
+          <input type="number" class="form-input" id="conv-usd" placeholder="0.00" inputmode="decimal"
+            oninput="document.getElementById('conv-inr').value=(parseFloat(this.value||0)*${state.settings.fx}).toFixed(2)">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">INR</label>
+          <input type="number" class="form-input" id="conv-inr" placeholder="0.00" inputmode="decimal"
+            oninput="document.getElementById('conv-usd').value=(parseFloat(this.value||0)/${state.settings.fx}).toFixed(2)">
+        </div>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px;">Rate: 1 USD = ${state.settings.fx} INR</div>
+    </div>
+
+    <div class="card animate-in delay-4">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:12px;">What-If Calculator</div>
+      <div class="form-group">
+        <label class="form-label">Custom Balance (USD)</label>
+        <input type="number" class="form-input" id="what-bal" placeholder="Enter any amount" inputmode="decimal" oninput="calcWhatIf()">
+      </div>
+      <div id="what-result" style="font-size:14px; color:var(--text2); text-align:center; padding:8px; display:none;"></div>
+    </div>
+  `;
+  document.getElementById('calc-body').innerHTML = html;
+}
+
+function calcWhatIf() {
+  const val = parseFloat(document.getElementById('what-bal').value) || 0;
+  const el = document.getElementById('what-result');
+  if (val <= 0) { el.style.display = 'none'; return; }
+  const inr = val * state.settings.fx;
+  const z = (val * state.settings.zakatRate) / 100;
+  const zInr = (inr * state.settings.zakatRate) / 100;
+  const m = val >= state.settings.nisabUSD ? `<span style="color:var(--green)">✓ Meets nisab</span>` : `<span style="color:var(--red)">✗ Below nisab</span>`;
+  el.style.display = 'block';
+  el.innerHTML = `${m} &nbsp;·&nbsp; Zakat = <strong style="color:var(--gold2)">${fmt(z,'USD')}</strong> / <strong style="color:var(--gold2)">${fmt(zInr,'INR')}</strong>`;
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER: PAYMENTS
+// ═══════════════════════════════════════════════════
+function renderPayments() {
+  const sorted = [...state.payments].sort((a,b) => b.date.localeCompare(a.date));
+  const modeIcons = { 'Bank Transfer':'🏦', 'Cash':'💵', 'Online / UPI':'📱', 'Cheque':'📄', 'Crypto':'🔗', 'Other':'💳' };
+
+  const byYear = {};
+  sorted.forEach(p => {
+    const y = p.year || 'Other';
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(p);
+  });
+
+  const html = sorted.length === 0 ? `
+    <div class="empty">
+      <div class="empty-icon">💳</div>
+      <div class="empty-title">No payments recorded yet</div>
+      <div class="empty-sub">Tap + Add to record your zakat payments</div>
+    </div>
+  ` : `
+    <div class="stat-grid animate-in">
+      <div class="stat-card gold">
+        <div class="stat-label">Total Paid (USD)</div>
+        <div class="stat-val">${fmt(totalPaidUSD(),'USD',true)}</div>
+        <div class="stat-sub">${state.payments.length} payment${state.payments.length!==1?'s':''}</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-label">Total Paid (INR)</div>
+        <div class="stat-val">${fmt(totalPaidINR(),'INR',true)}</div>
+        <div class="stat-sub">across all years</div>
+      </div>
+    </div>
+
+    ${Object.entries(byYear).map(([year, pmts]) => `
+      <div class="divider-label"><span>${year}</span></div>
+      ${pmts.map(p => `
+        <div class="list-item animate-in">
+          <div class="list-icon ${p.currency==='USD'?'gold':'teal'}">${modeIcons[p.mode]||'💳'}</div>
+          <div class="list-info">
+            <div class="list-title">${p.recipient || 'Unnamed recipient'}</div>
+            <div class="list-sub">${p.mode} · ${fmtDate(p.date)}${p.notes?' · '+p.notes:''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+            <div class="list-amount" style="color:var(--green)">${fmt(parseFloat(p.amount),p.currency)}</div>
+            <span class="curr-tag">${p.currency}</span>
+          </div>
+          <button onclick="deletePayment('${p.id}')" style="background:var(--red-dim);border:none;color:var(--red);padding:6px 9px;border-radius:8px;font-size:16px;cursor:pointer;flex-shrink:0;margin-left:4px;">×</button>
+        </div>
+      `).join('')}
+    `).join('')}
+  `;
+  document.getElementById('payments-body').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close on backdrop tap
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+});
+
+function openAddBalance() {
+  document.getElementById('bal-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('bal-usd').value = '';
+  document.getElementById('bal-inr').value = '';
+  document.getElementById('bal-note').value = '';
+  openModal('modal-balance');
+}
+
+function openAddPayment() {
+  document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('pay-recipient').value = '';
+  document.getElementById('pay-amount').value = '';
+  document.getElementById('pay-notes').value = '';
+  // set current year option
+  const yr = document.getElementById('pay-year');
+  const now = new Date();
+  const cy = `${now.getFullYear()-1}–${now.getFullYear().toString().slice(-2)}`;
+  yr.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const y = now.getFullYear() - i;
+    const label = `${y-1}–${y.toString().slice(-2)}`;
+    yr.innerHTML += `<option ${i===0?'selected':''}>${label}</option>`;
+  }
+  openModal('modal-payment');
+}
+
+function openSettings() {
+  document.getElementById('set-hawl-start').value = state.settings.hawlStart;
+  document.getElementById('set-nisab-usd').value = state.settings.nisabUSD;
+  document.getElementById('set-nisab-inr').value = state.settings.nisabINR;
+  document.getElementById('set-fx').value = state.settings.fx;
+  document.getElementById('set-rate').value = state.settings.zakatRate;
+  const tog = document.getElementById('tog-compact');
+  if (state.settings.displayCompact) tog.classList.add('on');
+  else tog.classList.remove('on');
+  openModal('modal-settings');
+}
+
+function selectChip(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+
+// ═══════════════════════════════════════════════════
+// ASSET MODAL & CRUD
+// ═══════════════════════════════════════════════════
+function openAddAsset() {
+  document.getElementById('ast-edit-id').value = '';
+  document.getElementById('asset-modal-title').textContent = 'Add Asset / Account';
+  document.getElementById('ast-save-btn').textContent = 'Add Asset';
+  document.getElementById('ast-name').value = '';
+  document.getElementById('ast-amount').value = '';
+  document.getElementById('ast-currency').value = 'USD';
+  document.getElementById('ast-bank').value = '';
+  document.getElementById('ast-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ast-notes').value = '';
+  document.getElementById('ast-equiv-row').style.display = 'none';
+  // reset chips
+  document.querySelectorAll('#ast-type-chips .chip').forEach((c,i) => c.classList.toggle('active', i===0));
+  document.querySelectorAll('#ast-zakat-chips .chip').forEach((c,i) => c.classList.toggle('active', i===0));
+  openModal('modal-asset');
+}
+
+function editAsset(id) {
+  const a = state.assets.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('ast-edit-id').value = id;
+  document.getElementById('asset-modal-title').textContent = 'Edit Asset';
+  document.getElementById('ast-save-btn').textContent = 'Save Changes';
+  document.getElementById('ast-name').value = a.name || '';
+  document.getElementById('ast-amount').value = a.amount || '';
+  document.getElementById('ast-currency').value = a.currency || 'USD';
+  document.getElementById('ast-bank').value = a.bank || '';
+  document.getElementById('ast-date').value = a.date || '';
+  document.getElementById('ast-notes').value = a.notes || '';
+  // set type chips
+  document.querySelectorAll('#ast-type-chips .chip').forEach(c => c.classList.toggle('active', c.dataset.val === a.type));
+  // set zakat chips
+  document.querySelectorAll('#ast-zakat-chips .chip').forEach(c => c.classList.toggle('active', c.dataset.val === (a.zakatable||'yes')));
+  autoConvertAsset();
+  openModal('modal-asset');
+}
+
+function autoConvertAsset() {
+  const amount = parseFloat(document.getElementById('ast-amount').value) || 0;
+  const currency = document.getElementById('ast-currency').value;
+  const equivRow = document.getElementById('ast-equiv-row');
+  const equivText = document.getElementById('ast-equiv-text');
+  if (amount > 0 && currency !== 'USD') {
+    const usd = assetToUSD(amount, currency);
+    const inr = usd * state.settings.fx;
+    equivRow.style.display = 'block';
+    equivText.innerHTML = `≈ <strong style="color:var(--gold2)">${fmt(usd,'USD')}</strong> &nbsp;/&nbsp; <strong style="color:var(--teal)">${fmt(inr,'INR')}</strong>`;
+  } else if (amount > 0 && currency === 'USD') {
+    const inr = amount * state.settings.fx;
+    equivRow.style.display = 'block';
+    equivText.innerHTML = `≈ <strong style="color:var(--teal)">${fmt(inr,'INR')}</strong>`;
+  } else {
+    equivRow.style.display = 'none';
+  }
+}
+
+function saveAsset() {
+  const name     = document.getElementById('ast-name').value.trim();
+  const amount   = parseFloat(document.getElementById('ast-amount').value);
+  const currency = document.getElementById('ast-currency').value;
+  const bank     = document.getElementById('ast-bank').value.trim();
+  const date     = document.getElementById('ast-date').value;
+  const notes    = document.getElementById('ast-notes').value.trim();
+  const typeEl   = document.querySelector('#ast-type-chips .chip.active');
+  const zakatEl  = document.querySelector('#ast-zakat-chips .chip.active');
+  const editId   = document.getElementById('ast-edit-id').value;
+
+  if (!name || !amount || isNaN(amount)) {
+    alert('Please enter an account name and balance amount.'); return;
+  }
+
+  const assetObj = {
+    id: editId || uid(), name, amount, currency,
+    type: typeEl ? typeEl.dataset.val : 'savings',
+    zakatable: zakatEl ? zakatEl.dataset.val : 'yes',
+    bank, date, notes
+  };
+
+  if (editId) {
+    const idx = state.assets.findIndex(a => a.id === editId);
+    if (idx >= 0) state.assets[idx] = assetObj;
+  } else {
+    state.assets.push(assetObj);
+  }
+
+  save();
+  closeModal('modal-asset');
+  renderAssets();
+  renderDashboard();
+}
+
+function deleteAsset(id) {
+  if (!confirm('Remove this asset?')) return;
+  state.assets = state.assets.filter(a => a.id !== id);
+  save(); renderAssets(); renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// SAVE ACTIONS
+// ═══════════════════════════════════════════════════
+function saveBalance() {
+  const date = document.getElementById('bal-date').value;
+  const usd  = document.getElementById('bal-usd').value;
+  const inr  = document.getElementById('bal-inr').value;
+  const note = document.getElementById('bal-note').value;
+
+  if (!date || (!usd && !inr)) {
+    alert('Please enter a date and at least one balance amount.'); return;
+  }
+
+  // auto-fill the other currency if only one provided
+  let finalUsd = parseFloat(usd) || 0;
+  let finalInr = parseFloat(inr) || 0;
+  if (finalUsd && !finalInr) finalInr = finalUsd * state.settings.fx;
+  if (finalInr && !finalUsd) finalUsd = finalInr / state.settings.fx;
+
+  state.balances.push({ id: uid(), date, usd: finalUsd, inr: finalInr, note });
+  save();
+  closeModal('modal-balance');
+  renderBalance();
+  renderDashboard();
+}
+
+function savePayment() {
+  const recipient = document.getElementById('pay-recipient').value.trim();
+  const amount    = document.getElementById('pay-amount').value;
+  const currency  = document.getElementById('pay-currency').value;
+  const date      = document.getElementById('pay-date').value;
+  const year      = document.getElementById('pay-year').value;
+  const notes     = document.getElementById('pay-notes').value.trim();
+  const modeEl    = document.querySelector('#pay-mode-chips .chip.active');
+  const mode      = modeEl ? modeEl.dataset.val : 'Other';
+
+  if (!recipient || !amount || !date) {
+    alert('Please fill in recipient, amount, and date.'); return;
+  }
+
+  state.payments.push({ id: uid(), recipient, amount: parseFloat(amount), currency, mode, date, year, notes });
+  save();
+  closeModal('modal-payment');
+  renderPayments();
+  renderDashboard();
+}
+
+function saveSettings() {
+  state.settings.hawlStart      = document.getElementById('set-hawl-start').value || state.settings.hawlStart;
+  state.settings.nisabUSD       = parseFloat(document.getElementById('set-nisab-usd').value) || state.settings.nisabUSD;
+  state.settings.nisabINR       = parseFloat(document.getElementById('set-nisab-inr').value) || state.settings.nisabINR;
+  state.settings.fx             = parseFloat(document.getElementById('set-fx').value) || state.settings.fx;
+  state.settings.zakatRate      = parseFloat(document.getElementById('set-rate').value) || 2.5;
+  state.settings.displayCompact = document.getElementById('tog-compact').classList.contains('on');
+  save();
+  closeModal('modal-settings');
+  renderDashboard();
+  renderCalc();
+  renderAssets();
+  renderBalance();
+  renderPayments();
+  if (document.getElementById('screen-interest').classList.contains('active')) renderInterest();
+}
+
+function deleteBalance(id) {
+  if (!confirm('Delete this balance snapshot?')) return;
+  state.balances = state.balances.filter(b => b.id !== id);
+  save(); renderBalance(); renderDashboard();
+}
+
+function deletePayment(id) {
+  if (!confirm('Delete this payment record?')) return;
+  state.payments = state.payments.filter(p => p.id !== id);
+  save(); renderPayments(); renderDashboard();
+}
+
+function confirmClearData() {
+  if (!confirm('This will delete ALL your data permanently. Are you sure?')) return;
+  state = defaultState();
+  save();
+  closeModal('modal-settings');
+  renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// USD/INR auto-fill in balance modal
+// ═══════════════════════════════════════════════════
+document.getElementById('bal-usd').addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  if (v && !document.getElementById('bal-inr').value) {
+    document.getElementById('bal-inr').value = (v * state.settings.fx).toFixed(0);
+  }
+});
+document.getElementById('bal-inr').addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  if (v && !document.getElementById('bal-usd').value) {
+    document.getElementById('bal-usd').value = (v / state.settings.fx).toFixed(2);
+  }
+});
+
+
+
+// ═══════════════════════════════════════════════════
+// INTEREST HELPERS
+// ═══════════════════════════════════════════════════
+function totalInterestReceivedUSD() {
+  return state.interest.reduce((s,i) => s + assetToUSD(parseFloat(i.amount)||0, i.currency), 0);
+}
+function totalInterestDistributedUSD() {
+  return state.intDist.reduce((s,d) => s + assetToUSD(parseFloat(d.amount)||0, d.currency), 0);
+}
+function interestRemainingUSD() {
+  return Math.max(totalInterestReceivedUSD() - totalInterestDistributedUSD(), 0);
+}
+function autoConvertInterest() {
+  const amt = parseFloat(document.getElementById('int-amount').value)||0;
+  const cur = document.getElementById('int-currency').value;
+  const row = document.getElementById('int-equiv-row');
+  const txt = document.getElementById('int-equiv-text');
+  if (amt > 0) {
+    const usd = assetToUSD(amt, cur);
+    const inr = usd * state.settings.fx;
+    row.style.display = 'block';
+    txt.innerHTML = cur !== 'USD' ? `≈ <strong style="color:var(--orange)">${fmt(usd,'USD')}</strong> / <strong style="color:var(--teal)">${fmt(inr,'INR')}</strong>` : `≈ <strong style="color:var(--teal)">${fmt(inr,'INR')}</strong>`;
+  } else { row.style.display = 'none'; }
+}
+function autoConvertDist() {
+  const amt = parseFloat(document.getElementById('dist-amount').value)||0;
+  const cur = document.getElementById('dist-currency').value;
+  const row = document.getElementById('dist-equiv-row');
+  const txt = document.getElementById('dist-equiv-text');
+  if (amt > 0) {
+    const usd = assetToUSD(amt, cur);
+    const inr = usd * state.settings.fx;
+    row.style.display = 'block';
+    txt.innerHTML = cur !== 'USD' ? `≈ <strong style="color:var(--purple)">${fmt(usd,'USD')}</strong> / <strong style="color:var(--teal)">${fmt(inr,'INR')}</strong>` : `≈ <strong style="color:var(--teal)">${fmt(inr,'INR')}</strong>`;
+  } else { row.style.display = 'none'; }
+}
+
+// ─── RENDER ───
+function renderInterest() {
+  const recv = [...state.interest].sort((a,b) => b.date.localeCompare(a.date));
+  const dist = [...state.intDist].sort((a,b) => b.date.localeCompare(a.date));
+  const totalRecv = totalInterestReceivedUSD();
+  const totalDist = totalInterestDistributedUSD();
+  const remaining = interestRemainingUSD();
+  const pct = totalRecv > 0 ? Math.min(totalDist / totalRecv, 1) : 0;
+
+  let html = `
+    <!-- Hero -->
+    <div class="animate-in" style="background:linear-gradient(135deg,#1a100a,#0a0f1e);border:1px solid var(--orange-glow);border-radius:20px;padding:22px 18px 18px;margin-bottom:12px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-40px;right:-40px;width:130px;height:130px;background:radial-gradient(circle,var(--orange-glow) 0%,transparent 70%);pointer-events:none;"></div>
+      <div style="font-size:11px;font-weight:600;color:var(--orange);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Interest Received</div>
+      <div style="font-size:36px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;">${fmt(totalRecv,'USD')}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:6px;">${fmt(totalRecv*state.settings.fx,'INR')} · ${recv.length} entr${recv.length===1?'y':'ies'}</div>
+      <div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;margin-top:10px;background:${remaining>0?'var(--red-dim)':'var(--green-dim)'};color:${remaining>0?'var(--red)':'var(--green)'};">
+        ${remaining > 0 ? '● ' + fmt(remaining,'USD') + ' still to distribute' : '● Fully distributed ✓'}
+      </div>
+    </div>
+
+    <!-- Stat grid -->
+    <div class="stat-grid animate-in delay-1">
+      <div class="stat-card" style="border-color:var(--orange-glow);">
+        <div class="stat-label">Total Received</div>
+        <div class="stat-val" style="color:var(--orange);">${fmt(totalRecv,'USD',true)}</div>
+        <div class="stat-sub">${fmt(totalRecv*state.settings.fx,'INR',true)}</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(167,139,250,0.2);">
+        <div class="stat-label">Distributed</div>
+        <div class="stat-val" style="color:var(--purple);">${fmt(totalDist,'USD',true)}</div>
+        <div class="stat-sub">${fmt(totalDist*state.settings.fx,'INR',true)}</div>
+      </div>
+      <div class="stat-card ${remaining>0?'red':'green'}">
+        <div class="stat-label">Outstanding</div>
+        <div class="stat-val">${remaining > 0 ? fmt(remaining,'USD',true) : '✓ Done'}</div>
+        <div class="stat-sub">${remaining > 0 ? fmt(remaining*state.settings.fx,'INR',true) : 'All distributed'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Distributions</div>
+        <div class="stat-val">${dist.length}</div>
+        <div class="stat-sub">transactions</div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    ${totalRecv > 0 ? `
+    <div class="card animate-in delay-2">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;">Distribution Progress</div>
+      <div class="progress-label">
+        <span style="color:var(--purple);">${fmt(totalDist,'USD')} given away</span>
+        <span>${(pct*100).toFixed(0)}%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${(pct*100).toFixed(1)}%;background:linear-gradient(90deg,#8b5cf6,var(--purple));"></div></div>
+      <div style="margin-top:6px;font-size:12px;color:var(--text3);">of ${fmt(totalRecv,'USD')} total interest received</div>
+    </div>` : ''}
+
+    <!-- Add buttons -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;" class="animate-in delay-2">
+      <button class="btn" style="background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange-glow);" onclick="openAddInterest()">+ Log Interest</button>
+      <button class="btn" style="background:var(--purple-dim);color:var(--purple);border:1px solid rgba(167,139,250,0.25);" onclick="openAddDist()">+ Distribute</button>
+    </div>
+  `;
+
+  // Interest received list
+  if (recv.length > 0) {
+    // Group by account
+    const byAccount = {};
+    recv.forEach(i => {
+      const k = i.accountName || 'Other';
+      if (!byAccount[k]) byAccount[k] = [];
+      byAccount[k].push(i);
+    });
+
+    html += `<div class="divider-label"><span>Interest Received</span></div>`;
+    Object.entries(byAccount).forEach(([acct, entries]) => {
+      const acctTotal = entries.reduce((s,i) => s + assetToUSD(parseFloat(i.amount)||0, i.currency), 0);
+      html += `
+        <div style="margin-bottom:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 4px 3px;">
+            <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;">🏦 ${acct}</span>
+            <span style="font-size:12px;font-weight:600;font-family:var(--mono);color:var(--orange);">${fmt(acctTotal,'USD',true)}</span>
+          </div>
+          ${entries.map(i => `
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--orange-dim);">💹</div>
+              <div class="list-info">
+                <div class="list-title">${i.period || fmtDate(i.date)}</div>
+                <div class="list-sub">${fmtDate(i.date)}${i.notes?' · '+i.notes:''}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+                <div class="list-amount" style="color:var(--orange);">${fmtAssetAmount(i.amount,i.currency)}</div>
+                <span class="curr-tag">${i.currency}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-left:6px;flex-shrink:0;">
+                <button onclick="editInterest('${i.id}')" style="background:var(--blue-dim);border:none;color:var(--blue);padding:5px 8px;border-radius:7px;font-size:13px;cursor:pointer;">✎</button>
+                <button onclick="deleteInterest('${i.id}')" style="background:var(--red-dim);border:none;color:var(--red);padding:5px 8px;border-radius:7px;font-size:14px;cursor:pointer;">×</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    });
+  }
+
+  // Distributions list
+  if (dist.length > 0) {
+    html += `<div class="divider-label"><span>Distributed To</span></div>`;
+    const modeIcons = {'Bank Transfer':'🏦','Cash':'💵','Online / UPI':'📱','Cheque':'📄','Other':'💳'};
+    html += dist.map(d => `
+      <div class="list-item">
+        <div class="list-icon" style="background:var(--purple-dim);">${modeIcons[d.mode]||'💳'}</div>
+        <div class="list-info">
+          <div class="list-title">${d.recipient || 'Unnamed'}</div>
+          <div class="list-sub">${d.mode} · ${fmtDate(d.date)}${d.notes?' · '+d.notes:''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+          <div class="list-amount" style="color:var(--purple);">${fmtAssetAmount(d.amount,d.currency)}</div>
+          <span class="curr-tag">${d.currency}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-left:6px;flex-shrink:0;">
+          <button onclick="editDist('${d.id}')" style="background:var(--blue-dim);border:none;color:var(--blue);padding:5px 8px;border-radius:7px;font-size:13px;cursor:pointer;">✎</button>
+          <button onclick="deleteDist('${d.id}')" style="background:var(--red-dim);border:none;color:var(--red);padding:5px 8px;border-radius:7px;font-size:14px;cursor:pointer;">×</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  if (recv.length === 0 && dist.length === 0) {
+    html += `<div class="empty" style="padding-top:30px;"><div class="empty-icon">💹</div><div class="empty-title">No interest tracked yet</div><div class="empty-sub">Log interest credited to your accounts, then record how you've distributed it</div></div>`;
+  }
+
+  document.getElementById('interest-body').innerHTML = html;
+}
+
+// ─── CRUD: INTEREST RECEIVED ───
+function openAddInterest() {
+  document.getElementById('int-edit-id').value = '';
+  document.getElementById('int-account').value = '';
+  document.getElementById('int-amount').value = '';
+  document.getElementById('int-currency').value = 'USD';
+  document.getElementById('int-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('int-period').value = '';
+  document.getElementById('int-notes').value = '';
+  document.getElementById('int-equiv-row').style.display = 'none';
+  openModal('modal-interest-recv');
+}
+function editInterest(id) {
+  const r = state.interest.find(x => x.id === id); if (!r) return;
+  document.getElementById('int-edit-id').value = id;
+  document.getElementById('int-account').value = r.accountName || '';
+  document.getElementById('int-amount').value = r.amount || '';
+  document.getElementById('int-currency').value = r.currency || 'USD';
+  document.getElementById('int-date').value = r.date || '';
+  document.getElementById('int-period').value = r.period || '';
+  document.getElementById('int-notes').value = r.notes || '';
+  autoConvertInterest();
+  openModal('modal-interest-recv');
+}
+function saveInterest() {
+  const accountName = document.getElementById('int-account').value.trim();
+  const amount = parseFloat(document.getElementById('int-amount').value);
+  const currency = document.getElementById('int-currency').value;
+  const date = document.getElementById('int-date').value;
+  const period = document.getElementById('int-period').value.trim();
+  const notes = document.getElementById('int-notes').value.trim();
+  const editId = document.getElementById('int-edit-id').value;
+  if (!accountName || !amount || isNaN(amount) || !date) { alert('Please fill account name, amount and date.'); return; }
+  const obj = { id: editId || uid(), accountName, amount, currency, date, period, notes };
+  if (editId) { const idx = state.interest.findIndex(x => x.id===editId); if(idx>=0) state.interest[idx]=obj; }
+  else state.interest.push(obj);
+  save(); closeModal('modal-interest-recv'); renderInterest(); renderDashboard();
+}
+function deleteInterest(id) {
+  if (!confirm('Delete this interest entry?')) return;
+  state.interest = state.interest.filter(x => x.id !== id);
+  save(); renderInterest(); renderDashboard();
+}
+
+// ─── CRUD: DISTRIBUTIONS ───
+function openAddDist() {
+  document.getElementById('dist-edit-id').value = '';
+  document.getElementById('dist-recipient').value = '';
+  document.getElementById('dist-amount').value = '';
+  document.getElementById('dist-currency').value = 'USD';
+  document.getElementById('dist-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dist-notes').value = '';
+  document.getElementById('dist-equiv-row').style.display = 'none';
+  document.querySelectorAll('#dist-mode-chips .chip').forEach((c,i) => c.classList.toggle('active',i===0));
+  openModal('modal-interest-dist');
+}
+function editDist(id) {
+  const d = state.intDist.find(x => x.id === id); if (!d) return;
+  document.getElementById('dist-edit-id').value = id;
+  document.getElementById('dist-recipient').value = d.recipient || '';
+  document.getElementById('dist-amount').value = d.amount || '';
+  document.getElementById('dist-currency').value = d.currency || 'USD';
+  document.getElementById('dist-date').value = d.date || '';
+  document.getElementById('dist-notes').value = d.notes || '';
+  document.querySelectorAll('#dist-mode-chips .chip').forEach(c => c.classList.toggle('active', c.dataset.val === d.mode));
+  autoConvertDist();
+  openModal('modal-interest-dist');
+}
+function saveDist() {
+  const recipient = document.getElementById('dist-recipient').value.trim();
+  const amount = parseFloat(document.getElementById('dist-amount').value);
+  const currency = document.getElementById('dist-currency').value;
+  const date = document.getElementById('dist-date').value;
+  const notes = document.getElementById('dist-notes').value.trim();
+  const modeEl = document.querySelector('#dist-mode-chips .chip.active');
+  const mode = modeEl ? modeEl.dataset.val : 'Other';
+  const editId = document.getElementById('dist-edit-id').value;
+  if (!recipient || !amount || isNaN(amount) || !date) { alert('Please fill recipient, amount and date.'); return; }
+  const obj = { id: editId || uid(), recipient, amount, currency, mode, date, notes };
+  if (editId) { const idx = state.intDist.findIndex(x => x.id===editId); if(idx>=0) state.intDist[idx]=obj; }
+  else state.intDist.push(obj);
+  save(); closeModal('modal-interest-dist'); renderInterest(); renderDashboard();
+}
+function deleteDist(id) {
+  if (!confirm('Delete this distribution?')) return;
+  state.intDist = state.intDist.filter(x => x.id !== id);
+  save(); renderInterest(); renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// EXPORT TO EXCEL
+// ═══════════════════════════════════════════════════
+function exportToExcel() {
+  const wb = XLSX.utils.book_new();
+  const fx = state.settings.fx;
+  const rate = state.settings.zakatRate;
+
+  // ── Sheet 1: Summary ──
+  const summaryData = [
+    ['ZAKAT TRACKER — EXPORT SUMMARY', '', ''],
+    ['Generated on', new Date().toLocaleDateString('en-US', {day:'numeric',month:'long',year:'numeric'}), ''],
+    ['', '', ''],
+    ['SETTINGS', '', ''],
+    ['Hawl Start Date', state.settings.hawlStart, ''],
+    ['Nisab Threshold (USD)', state.settings.nisabUSD, ''],
+    ['Nisab Threshold (INR)', state.settings.nisabINR, ''],
+    ['USD → INR Rate', state.settings.fx, ''],
+    ['Zakat Rate (%)', state.settings.zakatRate, ''],
+    ['', '', ''],
+    ['ZAKAT SUMMARY', '', ''],
+    ['Total Zakatable Assets (USD)', totalAssetsUSD() || averageBalance().usd, ''],
+    ['Total Zakatable Assets (INR)', totalAssetsINR() || averageBalance().inr, ''],
+    ['Nisab Met?', nisabMet() ? 'YES' : 'NO', ''],
+    ['Zakat Owed (USD)', zakatOwedUSD(), ''],
+    ['Zakat Owed (INR)', zakatOwedINR(), ''],
+    ['Total Paid (USD)', totalPaidUSD(), ''],
+    ['Total Paid (INR)', totalPaidINR(), ''],
+    ['Remaining (USD)', remainingUSD(), ''],
+    ['Remaining (INR)', remainingINR(), ''],
+    ['Hawl Days Elapsed', hawlDays(), ''],
+    ['Hawl Days Remaining', hawlDaysLeft(), ''],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols'] = [{wch:30},{wch:20},{wch:20}];
+  // Bold title row
+  if (!wsSummary['A1'].s) wsSummary['A1'].s = {};
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+  // ── Sheet 2: Assets ──
+  if (state.assets.length > 0) {
+    const assetHeaders = [
+      'Account Name', 'Asset Type', 'Balance', 'Currency',
+      'Equivalent (USD)', 'Equivalent (INR)', 'Institution / Bank',
+      'As of Date', 'Zakatable?', 'Notes'
+    ];
+    const assetRows = state.assets.map(a => {
+      const usd = ceilTo2(assetToUSD(parseFloat(a.amount)||0, a.currency));
+      const inr = ceilTo2(usd * fx);
+      return [
+        a.name || '',
+        TYPE_LABELS[a.type] || a.type || '',
+        parseFloat(a.amount) || 0,
+        a.currency || 'USD',
+        usd,
+        inr,
+        a.bank || '',
+        a.date || '',
+        a.zakatable === 'no' ? 'No' : 'Yes',
+        a.notes || ''
+      ];
+    });
+    const wsAssets = XLSX.utils.aoa_to_sheet([assetHeaders, ...assetRows]);
+    wsAssets['!cols'] = [
+      {wch:25},{wch:14},{wch:14},{wch:10},
+      {wch:16},{wch:16},{wch:18},{wch:14},{wch:12},{wch:25}
+    ];
+    // Totals row
+    const lastRow = assetRows.length + 2;
+    const totalsRow = [
+      'TOTALS', '', '', '',
+      ceilTo2(totalAssetsUSD()),
+      ceilTo2(totalAssetsINR()),
+      '', '', '', ''
+    ];
+    XLSX.utils.sheet_add_aoa(wsAssets, [totalsRow], {origin: lastRow - 1});
+    XLSX.utils.book_append_sheet(wb, wsAssets, 'Assets');
+  }
+
+  // ── Sheet 3: Payments ──
+  if (state.payments.length > 0) {
+    const payHeaders = [
+      'Recipient / Cause', 'Amount', 'Currency',
+      'Amount (USD)', 'Amount (INR)',
+      'Mode of Payment', 'Date Paid', 'Zakat Year', 'Notes'
+    ];
+    const sorted = [...state.payments].sort((a,b) => b.date.localeCompare(a.date));
+    const payRows = sorted.map(p => {
+      const amt = parseFloat(p.amount) || 0;
+      const usd = ceilTo2(toUSD(amt, p.currency));
+      const inr = ceilTo2(toINR(amt, p.currency));
+      return [
+        p.recipient || '',
+        amt,
+        p.currency || 'USD',
+        usd,
+        inr,
+        p.mode || '',
+        p.date || '',
+        p.year || '',
+        p.notes || ''
+      ];
+    });
+    const wsPayments = XLSX.utils.aoa_to_sheet([payHeaders, ...payRows]);
+    wsPayments['!cols'] = [
+      {wch:28},{wch:12},{wch:10},
+      {wch:14},{wch:14},
+      {wch:18},{wch:14},{wch:12},{wch:25}
+    ];
+    // Totals
+    const lastRow = payRows.length + 2;
+    XLSX.utils.sheet_add_aoa(wsPayments, [[
+      'TOTAL', '', '',
+      ceilTo2(totalPaidUSD()),
+      ceilTo2(totalPaidINR()),
+      '', '', '', ''
+    ]], {origin: lastRow - 1});
+    XLSX.utils.book_append_sheet(wb, wsPayments, 'Payments');
+  }
+
+  // ── Sheet 4: Hawl Balance Log ──
+  if (state.balances.length > 0) {
+    const balHeaders = [
+      'Date', 'Balance (USD)', 'Balance (INR)', 'Notes'
+    ];
+    const sorted = [...state.balances].sort((a,b) => b.date.localeCompare(a.date));
+    const balRows = sorted.map(b => [
+      b.date || '',
+      ceilTo2(parseFloat(b.usd) || 0),
+      ceilTo2(parseFloat(b.inr) || 0),
+      b.note || ''
+    ]);
+    const wsBalances = XLSX.utils.aoa_to_sheet([balHeaders, ...balRows]);
+    wsBalances['!cols'] = [{wch:14},{wch:16},{wch:16},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, wsBalances, 'Hawl Balance Log');
+  }
+
+  // ── Sheet 5: Interest Received ──
+  if (state.interest.length > 0) {
+    const intHeaders = ['Account / Source','Amount','Currency','Equivalent (USD)','Equivalent (INR)','Period','Date Received','Notes'];
+    const sortedInt = [...state.interest].sort((a,b) => b.date.localeCompare(a.date));
+    const intRows = sortedInt.map(i => {
+      const usd = ceilTo2(assetToUSD(parseFloat(i.amount)||0, i.currency));
+      const inr = ceilTo2(usd * fx);
+      return [i.accountName||'', parseFloat(i.amount)||0, i.currency||'USD', usd, inr, i.period||'', i.date||'', i.notes||''];
+    });
+    const wsInt = XLSX.utils.aoa_to_sheet([intHeaders, ...intRows]);
+    const lastIntRow = intRows.length + 2;
+    XLSX.utils.sheet_add_aoa(wsInt, [['TOTAL','','',ceilTo2(totalInterestReceivedUSD()),ceilTo2(totalInterestReceivedUSD()*fx),'','','']], {origin: lastIntRow - 1});
+    wsInt['!cols'] = [{wch:25},{wch:12},{wch:10},{wch:16},{wch:16},{wch:14},{wch:14},{wch:25}];
+    XLSX.utils.book_append_sheet(wb, wsInt, 'Interest Received');
+  }
+
+  // ── Sheet 6: Interest Distributed ──
+  if (state.intDist.length > 0) {
+    const distHeaders = ['Recipient / Cause','Amount','Currency','Equivalent (USD)','Equivalent (INR)','Mode','Date','Notes'];
+    const sortedDist = [...state.intDist].sort((a,b) => b.date.localeCompare(a.date));
+    const distRows = sortedDist.map(d => {
+      const usd = ceilTo2(assetToUSD(parseFloat(d.amount)||0, d.currency));
+      const inr = ceilTo2(usd * fx);
+      return [d.recipient||'', parseFloat(d.amount)||0, d.currency||'USD', usd, inr, d.mode||'', d.date||'', d.notes||''];
+    });
+    const wsDist = XLSX.utils.aoa_to_sheet([distHeaders, ...distRows]);
+    const lastDistRow = distRows.length + 2;
+    XLSX.utils.sheet_add_aoa(wsDist, [['TOTAL','','',ceilTo2(totalInterestDistributedUSD()),ceilTo2(totalInterestDistributedUSD()*fx),'','','']], {origin: lastDistRow - 1});
+    wsDist['!cols'] = [{wch:28},{wch:12},{wch:10},{wch:16},{wch:16},{wch:16},{wch:14},{wch:25}];
+    XLSX.utils.book_append_sheet(wb, wsDist, 'Interest Distributed');
+  }
+
+  // ── Download ──
+  const today = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Zakat_Tracker_${today}.xlsx`);
+  closeModal('modal-settings');
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+load();
+renderDashboard();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>if("serviceWorker"in navigator){navigator.serviceWorker.register("./sw.js")}</script>
+</body>
+</html>
